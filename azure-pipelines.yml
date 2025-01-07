@@ -17,6 +17,16 @@ pr:
     - doc/*
     - README.rst
 
+# Trigger a run on main at 00:00 (midnight) UTC on Sundays
+# Run even if there are no code changes
+schedules:
+  - cron: "0 0 * * 0"
+    displayName: "Sunday Test Runs"
+    always: true
+    branches:
+      include:
+        - main
+
 variables:
   triggeredByPullRequest: $[eq(variables['Build.Reason'], 'PullRequest')]
 
@@ -71,21 +81,34 @@ stages:
         - script: |
             pip install -e .
             pip install dask[dataframe]
-            pip install pytest pytest-azurepipelines
-            pip install pytest-cov pytest-mpl
-            pip install coveralls
+            pip install pytest pytest-azurepipelines pytest-cov pytest-mpl coveralls
           displayName: 'Install package'
 
         - script: |
             mkdir -p $(Build.ArtifactStagingDirectory)/test-results
-            pytest datamapplot/tests --mpl --show-capture=no -v --disable-warnings --junitxml=junit/test-results.xml --cov=datamapplot/ --cov-report=xml --cov-report=html --mpl-generate-summary=html --mpl-results-path=$(Build.ArtifactStagingDirectory)/test-results
+            mkdir -p $(Build.ArtifactStagingDirectory)/coverage
+            pytest datamapplot/tests --mpl --show-capture=no -v --disable-warnings \
+                --junitxml=$(Build.ArtifactStagingDirectory)/test-results/test-results.xml \
+                --cov=datamapplot/ --cov-report=xml:$(Build.ArtifactStagingDirectory)/coverage/coverage.xml \
+                --cov-report=html:$(Build.ArtifactStagingDirectory)/coverage/html \
+                --mpl-generate-summary=basic-html \
+                --mpl-results-path=$(Build.ArtifactStagingDirectory)/test-results
           displayName: 'Run tests'
 
-        - task: PublishBuildArtifacts@1
+        - task: PublishTestResults@2
           inputs:
-            pathToPublish: $(Build.ArtifactStagingDirectory)/test-results
-            artifactName: 'mpl-test-results'
-          condition: always()
+            testResultsFormat: 'JUnit'
+            testResultsFiles: '$(Build.ArtifactStagingDirectory)/test-results/test-results.xml'
+            testRunTitle: '$(Agent.OS) - $(Build.BuildNumber)[$(Agent.JobName)] - Python $(python.version)'
+          displayName: 'Publish Test Results'
+          condition: succeededOrFailed()
+
+        - task: PublishCodeCoverageResults@1
+          inputs:
+            codeCoverageTool: 'Cobertura'
+            summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverage/coverage.xml'
+            reportDirectory: '$(Build.ArtifactStagingDirectory)/coverage/html'
+          displayName: 'Publish Code Coverage Results'
 
         - bash: |
             coveralls
@@ -94,11 +117,19 @@ stages:
           env:
             COVERALLS_REPO_TOKEN: $(COVERALLS_TOKEN)
 
-        - task: PublishTestResults@2
+        - task: PublishBuildArtifacts@1
           inputs:
-            testResultsFiles: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
-            testRunTitle: '$(Agent.OS) - $(Build.BuildNumber)[$(Agent.JobName)] - Python $(python.version)'
-          condition: succeededOrFailed()
+            pathToPublish: $(Build.ArtifactStagingDirectory)/test-results
+            artifactName: 'mpl-test-results'
+          displayName: 'Publish MPL Test Artifacts'
+          condition: always()
+
+        - task: PublishPipelineArtifact@1
+          inputs:
+            targetPath: '$(Build.ArtifactStagingDirectory)/coverage/html'
+            artifact: 'coverage-html'
+          displayName: 'Publish Coverage HTML Artifact'
+          condition: always()
 
   - stage: BuildPublishArtifact
     dependsOn: RunAllTests
