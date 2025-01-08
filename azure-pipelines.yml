@@ -104,11 +104,9 @@ stages:
           displayName: 'Publish Test Results'
           condition: succeededOrFailed()
 
-        - task: PublishCodeCoverageResults@1
+        - task: PublishCodeCoverageResults@2
           inputs:
-            codeCoverageTool: 'Cobertura'
             summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverage/coverage.xml'
-            reportDirectory: '$(Build.ArtifactStagingDirectory)/coverage/html'
           displayName: 'Publish Code Coverage Results'
           condition: always()
 
