@@ -95,16 +95,6 @@ stages:
           displayName: 'Install local package'
 
         - script: |
-            python -m pip install --upgrade pip
-          displayName: 'Install dependencies'
-
-        - script: |
-            pip install -e .
-            pip install dask[dataframe]
-            pip install pytest pytest-azurepipelines pytest-cov pytest-mpl coveralls
-          displayName: 'Install package'
-
-        - script: |
             mkdir -p $(Build.ArtifactStagingDirectory)/junit
             mkdir -p $(Build.ArtifactStagingDirectory)/mpl
             mkdir -p $(Build.ArtifactStagingDirectory)/coverage
