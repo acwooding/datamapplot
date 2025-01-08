@@ -85,20 +85,21 @@ stages:
           displayName: 'Install package'
 
         - script: |
-            mkdir -p $(Build.ArtifactStagingDirectory)/test-results
+            mkdir -p $(Build.ArtifactStagingDirectory)/junit
+            mkdir -p $(Build.ArtifactStagingDirectory)/mpl
             mkdir -p $(Build.ArtifactStagingDirectory)/coverage
             pytest datamapplot/tests --mpl --show-capture=no -v --disable-warnings \
-                --junitxml=$(Build.ArtifactStagingDirectory)/test-results/test-results.xml \
+                --junitxml=$(Build.ArtifactStagingDirectory)/junit/test-results.xml \
                 --cov=datamapplot/ --cov-report=xml:$(Build.ArtifactStagingDirectory)/coverage/coverage.xml \
                 --cov-report=html:$(Build.ArtifactStagingDirectory)/coverage/html \
                 --mpl-generate-summary=basic-html \
-                --mpl-results-path=$(Build.ArtifactStagingDirectory)/test-results
+                --mpl-results-path=$(Build.ArtifactStagingDirectory)/mpl
           displayName: 'Run tests'
 
         - task: PublishTestResults@2
           inputs:
             testResultsFormat: 'JUnit'
-            testResultsFiles: '$(Build.ArtifactStagingDirectory)/test-results/test-results.xml'
+            testResultsFiles: '$(Build.ArtifactStagingDirectory)/junit/test-results.xml'
             testRunTitle: '$(Agent.OS) - $(Build.BuildNumber)[$(Agent.JobName)] - Python $(python.version)'
           displayName: 'Publish Test Results'
           condition: succeededOrFailed()
@@ -109,6 +110,7 @@ stages:
             summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverage/coverage.xml'
             reportDirectory: '$(Build.ArtifactStagingDirectory)/coverage/html'
           displayName: 'Publish Code Coverage Results'
+          condition: always()
 
         - bash: |
             coveralls
@@ -119,7 +121,7 @@ stages:
 
         - task: PublishBuildArtifacts@1
           inputs:
-            pathToPublish: $(Build.ArtifactStagingDirectory)/test-results
+            pathToPublish: $(Build.ArtifactStagingDirectory)/mpl
             artifactName: 'mpl-test-results'
           displayName: 'Publish MPL Test Artifacts'
           condition: always()
