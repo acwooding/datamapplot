@@ -91,7 +91,7 @@ stages:
             pytest datamapplot/tests --mpl --show-capture=no -v --disable-warnings \
                 --junitxml=$(Build.ArtifactStagingDirectory)/junit/test-results.xml \
                 --cov=datamapplot/ --cov-report=xml:$(Build.ArtifactStagingDirectory)/coverage/coverage.xml \
-                --cov-report=html:$(Build.ArtifactStagingDirectory)/coverage/html \
+                --cov-report=html:$(Build.ArtifactStagingDirectory)/coverage \
                 --mpl-generate-summary=basic-html \
                 --mpl-results-path=$(Build.ArtifactStagingDirectory)/mpl
           displayName: 'Run tests'
@@ -127,7 +127,7 @@ stages:
 
         - task: PublishPipelineArtifact@1
           inputs:
-            targetPath: '$(Build.ArtifactStagingDirectory)/coverage/html'
+            targetPath: '$(Build.ArtifactStagingDirectory)/coverage'
             artifact: 'coverage-html'
           displayName: 'Publish Coverage HTML Artifact'
           condition: always()
