@@ -98,35 +98,18 @@ stages:
             mkdir -p $(Build.ArtifactStagingDirectory)/junit
             mkdir -p $(Build.ArtifactStagingDirectory)/mpl
             mkdir -p $(Build.ArtifactStagingDirectory)/coverage
-            pytest datamapplot/tests --mpl --show-capture=no -v --disable-warnings \
-                --junitxml=$(Build.ArtifactStagingDirectory)/junit/test-results.xml \
-                --cov=datamapplot/ --cov-report=xml:$(Build.ArtifactStagingDirectory)/coverage/coverage.xml \
-                --cov-report=html:$(Build.ArtifactStagingDirectory)/coverage \
-                --mpl-generate-summary=basic-html \
+            pytest datamapplot/tests --mpl --show-capture=no --disable-warnings \
+                --cov=datamapplot/ --cov-report=html \
+                --mpl-generate-summary=html \
                 --mpl-results-path=$(Build.ArtifactStagingDirectory)/mpl
           displayName: 'Run tests'
 
-        - task: PublishTestResults@2
-          inputs:
-            testResultsFormat: 'JUnit'
-            testResultsFiles: '$(Build.ArtifactStagingDirectory)/junit/test-results.xml'
-            testRunTitle: '$(Agent.OS) - $(Build.BuildNumber)[$(Agent.JobName)] - Python $(python.version)'
-          displayName: 'Publish Test Results'
-          condition: succeededOrFailed()
-
-        - task: PublishCodeCoverageResults@2
-          inputs:
-            summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverage/coverage.xml'
-            pathToSources: '$(Build.SourcesDirectory)/datamapplot'
-          displayName: 'Publish Code Coverage Results'
-          condition: always()
-
-        - bash: |
-            coveralls
-          displayName: 'Publish to coveralls'
-          condition: and(succeeded(), eq(variables.triggeredByPullRequest, false)) # Don't run this for PRs because they can't access pipeline secrets
-          env:
-            COVERALLS_REPO_TOKEN: $(COVERALLS_TOKEN)
+        # - bash: |
+        #     coveralls
+        #   displayName: 'Publish to coveralls'
+        #   condition: and(succeeded(), eq(variables.triggeredByPullRequest, false)) # Don't run this for PRs because they can't access pipeline secrets
+        #   env:
+        #     COVERALLS_REPO_TOKEN: $(COVERALLS_TOKEN)
 
         - task: PublishBuildArtifacts@1
           inputs:
@@ -137,7 +120,7 @@ stages:
 
         - task: PublishPipelineArtifact@1
           inputs:
-            targetPath: '$(Build.ArtifactStagingDirectory)/coverage'
+            targetPath: '$(Build.SourcesDirectory)/htmlcov'
             artifact: 'coverage-html'
           displayName: 'Publish Coverage HTML Artifact'
           condition: always()
