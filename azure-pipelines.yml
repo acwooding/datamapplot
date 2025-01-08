@@ -107,6 +107,7 @@ stages:
         - task: PublishCodeCoverageResults@2
           inputs:
             summaryFileLocation: '$(Build.ArtifactStagingDirectory)/coverage/coverage.xml'
+            pathToSources: '$(Build.SourcesDirectory)/datamapplot'
           displayName: 'Publish Code Coverage Results'
           condition: always()
 
